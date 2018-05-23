@@ -1,5 +1,6 @@
 module Main exposing (..)
 
+import AccessibleExample
 import Element exposing (..)
 import Element.Attributes exposing (..)
 import Element.Input as Input
@@ -24,12 +25,19 @@ main =
 
 
 type alias Model =
-    { status : String }
+    { accessibleAutocomplete : AccessibleExample.Model
+    , status : String
+    , currentFocus : Focused
+    }
 
 
 init : ( Model, Cmd Msg )
 init =
-    { status = "Hello world" } ! []
+    { accessibleAutocomplete = AccessibleExample.init
+    , status = "Hello world"
+    , currentFocus = Simple
+    }
+        ! []
 
 
 
@@ -38,13 +46,31 @@ init =
 
 type Msg
     = NoOp
+    | AccessibleExample AccessibleExample.Msg
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
-    case msg of
-        NoOp ->
-            model ! []
+    let
+        newModel =
+            case msg of
+                AccessibleExample autoMsg ->
+                    let
+                        toggleFocus autoMsg model =
+                            case autoMsg of
+                                AccessibleExample.OnFocus ->
+                                    { model | currentFocus = Simple }
+
+                                _ ->
+                                    model
+                    in
+                    { model | accessibleAutocomplete = Tuple.first <| AccessibleExample.update autoMsg model.accessibleAutocomplete }
+                        |> toggleFocus autoMsg
+
+                NoOp ->
+                    model
+    in
+    ( newModel, Cmd.none )
 
 
 
@@ -63,10 +89,16 @@ view model =
                     [ h1 Title [ paddingXY 0 30 ] (text "Shipper Savers ")
                     , h3 Subtitle [ paddingXY 0 20 ] (text "We compare sea freight from shipping lines and help save money")
                     , searchFormView
+                    , html (viewSimpleExample model.accessibleAutocomplete)
                     ]
                 )
             ]
         )
+
+
+viewSimpleExample : AccessibleExample.Model -> Html Msg
+viewSimpleExample autocomplete =
+    Html.map AccessibleExample (AccessibleExample.view autocomplete)
 
 
 searchFormView : Element Styles variation Msg
@@ -99,5 +131,16 @@ searchFormView =
 -- SUBSCRIPTIONS
 
 
-subscriptions _ =
-    Sub.none
+subscriptions : Model -> Sub Msg
+subscriptions model =
+    case model.currentFocus of
+        Simple ->
+            Sub.map AccessibleExample (AccessibleExample.subscriptions model.accessibleAutocomplete)
+
+        None ->
+            Sub.none
+
+
+type Focused
+    = Simple
+    | None

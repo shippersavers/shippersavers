@@ -6926,6 +6926,12 @@ return {
 
 }();
 
+var _elm_lang$dom$Dom$blur = _elm_lang$dom$Native_Dom.blur;
+var _elm_lang$dom$Dom$focus = _elm_lang$dom$Native_Dom.focus;
+var _elm_lang$dom$Dom$NotFound = function (a) {
+	return {ctor: 'NotFound', _0: a};
+};
+
 var _elm_lang$dom$Dom_LowLevel$onWindow = _elm_lang$dom$Native_Dom.onWindow;
 var _elm_lang$dom$Dom_LowLevel$onDocument = _elm_lang$dom$Native_Dom.onDocument;
 
@@ -13394,6 +13400,175 @@ var _elm_lang$html$Html_Events$Options = F2(
 var _elm_lang$html$Html_Keyed$node = _elm_lang$virtual_dom$VirtualDom$keyedNode;
 var _elm_lang$html$Html_Keyed$ol = _elm_lang$html$Html_Keyed$node('ol');
 var _elm_lang$html$Html_Keyed$ul = _elm_lang$html$Html_Keyed$node('ul');
+
+var _elm_lang$keyboard$Keyboard$onSelfMsg = F3(
+	function (router, _p0, state) {
+		var _p1 = _p0;
+		var _p2 = A2(_elm_lang$core$Dict$get, _p1.category, state);
+		if (_p2.ctor === 'Nothing') {
+			return _elm_lang$core$Task$succeed(state);
+		} else {
+			var send = function (tagger) {
+				return A2(
+					_elm_lang$core$Platform$sendToApp,
+					router,
+					tagger(_p1.keyCode));
+			};
+			return A2(
+				_elm_lang$core$Task$andThen,
+				function (_p3) {
+					return _elm_lang$core$Task$succeed(state);
+				},
+				_elm_lang$core$Task$sequence(
+					A2(_elm_lang$core$List$map, send, _p2._0.taggers)));
+		}
+	});
+var _elm_lang$keyboard$Keyboard_ops = _elm_lang$keyboard$Keyboard_ops || {};
+_elm_lang$keyboard$Keyboard_ops['&>'] = F2(
+	function (task1, task2) {
+		return A2(
+			_elm_lang$core$Task$andThen,
+			function (_p4) {
+				return task2;
+			},
+			task1);
+	});
+var _elm_lang$keyboard$Keyboard$init = _elm_lang$core$Task$succeed(_elm_lang$core$Dict$empty);
+var _elm_lang$keyboard$Keyboard$categorizeHelpHelp = F2(
+	function (value, maybeValues) {
+		var _p5 = maybeValues;
+		if (_p5.ctor === 'Nothing') {
+			return _elm_lang$core$Maybe$Just(
+				{
+					ctor: '::',
+					_0: value,
+					_1: {ctor: '[]'}
+				});
+		} else {
+			return _elm_lang$core$Maybe$Just(
+				{ctor: '::', _0: value, _1: _p5._0});
+		}
+	});
+var _elm_lang$keyboard$Keyboard$categorizeHelp = F2(
+	function (subs, subDict) {
+		categorizeHelp:
+		while (true) {
+			var _p6 = subs;
+			if (_p6.ctor === '[]') {
+				return subDict;
+			} else {
+				var _v4 = _p6._1,
+					_v5 = A3(
+					_elm_lang$core$Dict$update,
+					_p6._0._0,
+					_elm_lang$keyboard$Keyboard$categorizeHelpHelp(_p6._0._1),
+					subDict);
+				subs = _v4;
+				subDict = _v5;
+				continue categorizeHelp;
+			}
+		}
+	});
+var _elm_lang$keyboard$Keyboard$categorize = function (subs) {
+	return A2(_elm_lang$keyboard$Keyboard$categorizeHelp, subs, _elm_lang$core$Dict$empty);
+};
+var _elm_lang$keyboard$Keyboard$keyCode = A2(_elm_lang$core$Json_Decode$field, 'keyCode', _elm_lang$core$Json_Decode$int);
+var _elm_lang$keyboard$Keyboard$subscription = _elm_lang$core$Native_Platform.leaf('Keyboard');
+var _elm_lang$keyboard$Keyboard$Watcher = F2(
+	function (a, b) {
+		return {taggers: a, pid: b};
+	});
+var _elm_lang$keyboard$Keyboard$Msg = F2(
+	function (a, b) {
+		return {category: a, keyCode: b};
+	});
+var _elm_lang$keyboard$Keyboard$onEffects = F3(
+	function (router, newSubs, oldState) {
+		var rightStep = F3(
+			function (category, taggers, task) {
+				return A2(
+					_elm_lang$core$Task$andThen,
+					function (state) {
+						return A2(
+							_elm_lang$core$Task$andThen,
+							function (pid) {
+								return _elm_lang$core$Task$succeed(
+									A3(
+										_elm_lang$core$Dict$insert,
+										category,
+										A2(_elm_lang$keyboard$Keyboard$Watcher, taggers, pid),
+										state));
+							},
+							_elm_lang$core$Process$spawn(
+								A3(
+									_elm_lang$dom$Dom_LowLevel$onDocument,
+									category,
+									_elm_lang$keyboard$Keyboard$keyCode,
+									function (_p7) {
+										return A2(
+											_elm_lang$core$Platform$sendToSelf,
+											router,
+											A2(_elm_lang$keyboard$Keyboard$Msg, category, _p7));
+									})));
+					},
+					task);
+			});
+		var bothStep = F4(
+			function (category, _p8, taggers, task) {
+				var _p9 = _p8;
+				return A2(
+					_elm_lang$core$Task$map,
+					A2(
+						_elm_lang$core$Dict$insert,
+						category,
+						A2(_elm_lang$keyboard$Keyboard$Watcher, taggers, _p9.pid)),
+					task);
+			});
+		var leftStep = F3(
+			function (category, _p10, task) {
+				var _p11 = _p10;
+				return A2(
+					_elm_lang$keyboard$Keyboard_ops['&>'],
+					_elm_lang$core$Process$kill(_p11.pid),
+					task);
+			});
+		return A6(
+			_elm_lang$core$Dict$merge,
+			leftStep,
+			bothStep,
+			rightStep,
+			oldState,
+			_elm_lang$keyboard$Keyboard$categorize(newSubs),
+			_elm_lang$core$Task$succeed(_elm_lang$core$Dict$empty));
+	});
+var _elm_lang$keyboard$Keyboard$MySub = F2(
+	function (a, b) {
+		return {ctor: 'MySub', _0: a, _1: b};
+	});
+var _elm_lang$keyboard$Keyboard$presses = function (tagger) {
+	return _elm_lang$keyboard$Keyboard$subscription(
+		A2(_elm_lang$keyboard$Keyboard$MySub, 'keypress', tagger));
+};
+var _elm_lang$keyboard$Keyboard$downs = function (tagger) {
+	return _elm_lang$keyboard$Keyboard$subscription(
+		A2(_elm_lang$keyboard$Keyboard$MySub, 'keydown', tagger));
+};
+var _elm_lang$keyboard$Keyboard$ups = function (tagger) {
+	return _elm_lang$keyboard$Keyboard$subscription(
+		A2(_elm_lang$keyboard$Keyboard$MySub, 'keyup', tagger));
+};
+var _elm_lang$keyboard$Keyboard$subMap = F2(
+	function (func, _p12) {
+		var _p13 = _p12;
+		return A2(
+			_elm_lang$keyboard$Keyboard$MySub,
+			_p13._0,
+			function (_p14) {
+				return func(
+					_p13._1(_p14));
+			});
+	});
+_elm_lang$core$Native_Platform.effectManagers['Keyboard'] = {pkg: 'elm-lang/keyboard', init: _elm_lang$keyboard$Keyboard$init, onEffects: _elm_lang$keyboard$Keyboard$onEffects, onSelfMsg: _elm_lang$keyboard$Keyboard$onSelfMsg, tag: 'sub', subMap: _elm_lang$keyboard$Keyboard$subMap};
 
 var _elm_lang$window$Native_Window = function()
 {
@@ -26940,6 +27115,1186 @@ var _mdgriffith$style_elements$Style_Font$typeface = function (families) {
 	return _mdgriffith$style_elements$Style_Internal_Model$FontFamily(families);
 };
 
+var _thebritican$elm_autocomplete$Autocomplete_Autocomplete$sectionConfig = function (_p0) {
+	var _p1 = _p0;
+	return {toId: _p1.toId, getData: _p1.getData, ul: _p1.ul, li: _p1.li};
+};
+var _thebritican$elm_autocomplete$Autocomplete_Autocomplete$viewWithSectionsConfig = function (_p2) {
+	var _p3 = _p2;
+	return {toId: _p3.toId, ul: _p3.ul, li: _p3.li, section: _p3.section};
+};
+var _thebritican$elm_autocomplete$Autocomplete_Autocomplete$viewConfig = function (_p4) {
+	var _p5 = _p4;
+	return {toId: _p5.toId, ul: _p5.ul, li: _p5.li};
+};
+var _thebritican$elm_autocomplete$Autocomplete_Autocomplete$getPrevious = F3(
+	function (id, selectedId, resultId) {
+		return _elm_lang$core$Native_Utils.eq(selectedId, id) ? _elm_lang$core$Maybe$Just(id) : (_elm_lang$core$Native_Utils.eq(
+			A2(_elm_lang$core$Maybe$withDefault, '', resultId),
+			id) ? _elm_lang$core$Maybe$Just(selectedId) : resultId);
+	});
+var _thebritican$elm_autocomplete$Autocomplete_Autocomplete$getNextItemId = F2(
+	function (ids, selectedId) {
+		return A2(
+			_elm_lang$core$Maybe$withDefault,
+			selectedId,
+			A3(
+				_elm_lang$core$List$foldl,
+				_thebritican$elm_autocomplete$Autocomplete_Autocomplete$getPrevious(selectedId),
+				_elm_lang$core$Maybe$Nothing,
+				ids));
+	});
+var _thebritican$elm_autocomplete$Autocomplete_Autocomplete$getPreviousItemId = F2(
+	function (ids, selectedId) {
+		return A2(
+			_elm_lang$core$Maybe$withDefault,
+			selectedId,
+			A3(
+				_elm_lang$core$List$foldr,
+				_thebritican$elm_autocomplete$Autocomplete_Autocomplete$getPrevious(selectedId),
+				_elm_lang$core$Maybe$Nothing,
+				ids));
+	});
+var _thebritican$elm_autocomplete$Autocomplete_Autocomplete$navigateWithKey = F3(
+	function (code, ids, maybeId) {
+		var _p6 = code;
+		switch (_p6) {
+			case 38:
+				return A2(
+					_elm_lang$core$Maybe$map,
+					_thebritican$elm_autocomplete$Autocomplete_Autocomplete$getPreviousItemId(ids),
+					maybeId);
+			case 40:
+				return A2(
+					_elm_lang$core$Maybe$map,
+					_thebritican$elm_autocomplete$Autocomplete_Autocomplete$getNextItemId(ids),
+					maybeId);
+			default:
+				return maybeId;
+		}
+	});
+var _thebritican$elm_autocomplete$Autocomplete_Autocomplete$resetMouseStateWithId = F3(
+	function (separateSelections, id, state) {
+		return separateSelections ? {
+			key: state.key,
+			mouse: _elm_lang$core$Maybe$Just(id)
+		} : {
+			key: _elm_lang$core$Maybe$Just(id),
+			mouse: _elm_lang$core$Maybe$Just(id)
+		};
+	});
+var _thebritican$elm_autocomplete$Autocomplete_Autocomplete$updateConfig = function (_p7) {
+	var _p8 = _p7;
+	return {toId: _p8.toId, onKeyDown: _p8.onKeyDown, onTooLow: _p8.onTooLow, onTooHigh: _p8.onTooHigh, onMouseEnter: _p8.onMouseEnter, onMouseLeave: _p8.onMouseLeave, onMouseClick: _p8.onMouseClick, separateSelections: _p8.separateSelections};
+};
+var _thebritican$elm_autocomplete$Autocomplete_Autocomplete$empty = {key: _elm_lang$core$Maybe$Nothing, mouse: _elm_lang$core$Maybe$Nothing};
+var _thebritican$elm_autocomplete$Autocomplete_Autocomplete$reset = F2(
+	function (_p10, _p9) {
+		var _p11 = _p10;
+		var _p12 = _p9;
+		return _p11.separateSelections ? {key: _elm_lang$core$Maybe$Nothing, mouse: _p12.mouse} : _thebritican$elm_autocomplete$Autocomplete_Autocomplete$empty;
+	});
+var _thebritican$elm_autocomplete$Autocomplete_Autocomplete$resetToFirst = F3(
+	function (config, data, state) {
+		var _p13 = config;
+		var toId = _p13.toId;
+		var separateSelections = _p13.separateSelections;
+		var setFirstItem = F2(
+			function (datum, newState) {
+				return _elm_lang$core$Native_Utils.update(
+					newState,
+					{
+						key: _elm_lang$core$Maybe$Just(
+							toId(datum))
+					});
+			});
+		var _p14 = _elm_lang$core$List$head(data);
+		if (_p14.ctor === 'Nothing') {
+			return _thebritican$elm_autocomplete$Autocomplete_Autocomplete$empty;
+		} else {
+			var _p15 = _p14._0;
+			return separateSelections ? A2(
+				setFirstItem,
+				_p15,
+				A2(_thebritican$elm_autocomplete$Autocomplete_Autocomplete$reset, config, state)) : A2(setFirstItem, _p15, _thebritican$elm_autocomplete$Autocomplete_Autocomplete$empty);
+		}
+	});
+var _thebritican$elm_autocomplete$Autocomplete_Autocomplete$resetToFirstItem = F4(
+	function (config, data, howManyToShow, state) {
+		return A3(
+			_thebritican$elm_autocomplete$Autocomplete_Autocomplete$resetToFirst,
+			config,
+			A2(_elm_lang$core$List$take, howManyToShow, data),
+			state);
+	});
+var _thebritican$elm_autocomplete$Autocomplete_Autocomplete$resetToLastItem = F4(
+	function (config, data, howManyToShow, state) {
+		var reversedData = _elm_lang$core$List$reverse(
+			A2(_elm_lang$core$List$take, howManyToShow, data));
+		return A3(_thebritican$elm_autocomplete$Autocomplete_Autocomplete$resetToFirst, config, reversedData, state);
+	});
+var _thebritican$elm_autocomplete$Autocomplete_Autocomplete$State = F2(
+	function (a, b) {
+		return {key: a, mouse: b};
+	});
+var _thebritican$elm_autocomplete$Autocomplete_Autocomplete$UpdateConfig = F8(
+	function (a, b, c, d, e, f, g, h) {
+		return {onKeyDown: a, onTooLow: b, onTooHigh: c, onMouseEnter: d, onMouseLeave: e, onMouseClick: f, toId: g, separateSelections: h};
+	});
+var _thebritican$elm_autocomplete$Autocomplete_Autocomplete$HtmlDetails = F2(
+	function (a, b) {
+		return {attributes: a, children: b};
+	});
+var _thebritican$elm_autocomplete$Autocomplete_Autocomplete$ViewConfig = F3(
+	function (a, b, c) {
+		return {toId: a, ul: b, li: c};
+	});
+var _thebritican$elm_autocomplete$Autocomplete_Autocomplete$ViewWithSectionsConfig = F4(
+	function (a, b, c, d) {
+		return {toId: a, ul: b, li: c, section: d};
+	});
+var _thebritican$elm_autocomplete$Autocomplete_Autocomplete$SectionConfig = F4(
+	function (a, b, c, d) {
+		return {toId: a, getData: b, ul: c, li: d};
+	});
+var _thebritican$elm_autocomplete$Autocomplete_Autocomplete$SectionNode = F3(
+	function (a, b, c) {
+		return {nodeType: a, attributes: b, children: c};
+	});
+var _thebritican$elm_autocomplete$Autocomplete_Autocomplete$NoOp = {ctor: 'NoOp'};
+var _thebritican$elm_autocomplete$Autocomplete_Autocomplete$mapNeverToMsg = function (msg) {
+	return A2(
+		_elm_lang$html$Html_Attributes$map,
+		function (_p16) {
+			return _thebritican$elm_autocomplete$Autocomplete_Autocomplete$NoOp;
+		},
+		msg);
+};
+var _thebritican$elm_autocomplete$Autocomplete_Autocomplete$MouseClick = function (a) {
+	return {ctor: 'MouseClick', _0: a};
+};
+var _thebritican$elm_autocomplete$Autocomplete_Autocomplete$MouseLeave = function (a) {
+	return {ctor: 'MouseLeave', _0: a};
+};
+var _thebritican$elm_autocomplete$Autocomplete_Autocomplete$MouseEnter = function (a) {
+	return {ctor: 'MouseEnter', _0: a};
+};
+var _thebritican$elm_autocomplete$Autocomplete_Autocomplete$viewData = F3(
+	function (_p18, _p17, data) {
+		var _p19 = _p18;
+		var _p20 = _p17;
+		var id = _p19.toId(data);
+		var isSelected = function (maybeId) {
+			var _p21 = maybeId;
+			if (_p21.ctor === 'Just') {
+				return _elm_lang$core$Native_Utils.eq(_p21._0, id);
+			} else {
+				return false;
+			}
+		};
+		var listItemData = A3(
+			_p19.li,
+			isSelected(_p20.key),
+			isSelected(_p20.mouse),
+			data);
+		var customAttributes = A2(_elm_lang$core$List$map, _thebritican$elm_autocomplete$Autocomplete_Autocomplete$mapNeverToMsg, listItemData.attributes);
+		var customLiAttr = A2(
+			_elm_lang$core$List$append,
+			customAttributes,
+			{
+				ctor: '::',
+				_0: _elm_lang$html$Html_Events$onMouseEnter(
+					_thebritican$elm_autocomplete$Autocomplete_Autocomplete$MouseEnter(id)),
+				_1: {
+					ctor: '::',
+					_0: _elm_lang$html$Html_Events$onMouseLeave(
+						_thebritican$elm_autocomplete$Autocomplete_Autocomplete$MouseLeave(id)),
+					_1: {
+						ctor: '::',
+						_0: _elm_lang$html$Html_Events$onClick(
+							_thebritican$elm_autocomplete$Autocomplete_Autocomplete$MouseClick(id)),
+						_1: {ctor: '[]'}
+					}
+				}
+			});
+		return A2(
+			_elm_lang$html$Html$li,
+			customLiAttr,
+			A2(
+				_elm_lang$core$List$map,
+				_elm_lang$html$Html$map(
+					function (html) {
+						return _thebritican$elm_autocomplete$Autocomplete_Autocomplete$NoOp;
+					}),
+				listItemData.children));
+	});
+var _thebritican$elm_autocomplete$Autocomplete_Autocomplete$viewSection = F3(
+	function (config, state, section) {
+		var getKeyedItems = function (datum) {
+			return {
+				ctor: '_Tuple2',
+				_0: config.toId(datum),
+				_1: A3(_thebritican$elm_autocomplete$Autocomplete_Autocomplete$viewData, config, state, datum)
+			};
+		};
+		var viewItemList = A2(
+			_elm_lang$html$Html_Keyed$ul,
+			A2(_elm_lang$core$List$map, _thebritican$elm_autocomplete$Autocomplete_Autocomplete$mapNeverToMsg, config.ul),
+			A2(
+				_elm_lang$core$List$map,
+				getKeyedItems,
+				config.section.getData(section)));
+		var sectionNode = config.section.li(section);
+		var attributes = A2(_elm_lang$core$List$map, _thebritican$elm_autocomplete$Autocomplete_Autocomplete$mapNeverToMsg, sectionNode.attributes);
+		var customChildren = A2(
+			_elm_lang$core$List$map,
+			_elm_lang$html$Html$map(
+				function (html) {
+					return _thebritican$elm_autocomplete$Autocomplete_Autocomplete$NoOp;
+				}),
+			sectionNode.children);
+		var children = A2(
+			_elm_lang$core$List$append,
+			customChildren,
+			{
+				ctor: '::',
+				_0: viewItemList,
+				_1: {ctor: '[]'}
+			});
+		return A2(
+			_elm_lang$html$Html$li,
+			attributes,
+			{
+				ctor: '::',
+				_0: A3(_elm_lang$html$Html$node, sectionNode.nodeType, attributes, children),
+				_1: {ctor: '[]'}
+			});
+	});
+var _thebritican$elm_autocomplete$Autocomplete_Autocomplete$viewWithSections = F4(
+	function (config, howManyToShow, state, sections) {
+		var getKeyedItems = function (section) {
+			return {
+				ctor: '_Tuple2',
+				_0: config.section.toId(section),
+				_1: A3(_thebritican$elm_autocomplete$Autocomplete_Autocomplete$viewSection, config, state, section)
+			};
+		};
+		return A2(
+			_elm_lang$html$Html_Keyed$ul,
+			A2(_elm_lang$core$List$map, _thebritican$elm_autocomplete$Autocomplete_Autocomplete$mapNeverToMsg, config.section.ul),
+			A2(_elm_lang$core$List$map, getKeyedItems, sections));
+	});
+var _thebritican$elm_autocomplete$Autocomplete_Autocomplete$viewItem = F3(
+	function (_p23, _p22, data) {
+		var _p24 = _p23;
+		var _p25 = _p22;
+		var id = _p24.toId(data);
+		var isSelected = function (maybeId) {
+			var _p26 = maybeId;
+			if (_p26.ctor === 'Just') {
+				return _elm_lang$core$Native_Utils.eq(_p26._0, id);
+			} else {
+				return false;
+			}
+		};
+		var listItemData = A3(
+			_p24.li,
+			isSelected(_p25.key),
+			isSelected(_p25.mouse),
+			data);
+		var customAttributes = A2(_elm_lang$core$List$map, _thebritican$elm_autocomplete$Autocomplete_Autocomplete$mapNeverToMsg, listItemData.attributes);
+		var customLiAttr = A2(
+			_elm_lang$core$List$append,
+			customAttributes,
+			{
+				ctor: '::',
+				_0: _elm_lang$html$Html_Events$onMouseEnter(
+					_thebritican$elm_autocomplete$Autocomplete_Autocomplete$MouseEnter(id)),
+				_1: {
+					ctor: '::',
+					_0: _elm_lang$html$Html_Events$onMouseLeave(
+						_thebritican$elm_autocomplete$Autocomplete_Autocomplete$MouseLeave(id)),
+					_1: {
+						ctor: '::',
+						_0: _elm_lang$html$Html_Events$onClick(
+							_thebritican$elm_autocomplete$Autocomplete_Autocomplete$MouseClick(id)),
+						_1: {ctor: '[]'}
+					}
+				}
+			});
+		return A2(
+			_elm_lang$html$Html$li,
+			customLiAttr,
+			A2(
+				_elm_lang$core$List$map,
+				_elm_lang$html$Html$map(
+					function (html) {
+						return _thebritican$elm_autocomplete$Autocomplete_Autocomplete$NoOp;
+					}),
+				listItemData.children));
+	});
+var _thebritican$elm_autocomplete$Autocomplete_Autocomplete$viewList = F4(
+	function (config, howManyToShow, state, data) {
+		var getKeyedItems = function (datum) {
+			return {
+				ctor: '_Tuple2',
+				_0: config.toId(datum),
+				_1: A3(_thebritican$elm_autocomplete$Autocomplete_Autocomplete$viewItem, config, state, datum)
+			};
+		};
+		var customUlAttr = A2(_elm_lang$core$List$map, _thebritican$elm_autocomplete$Autocomplete_Autocomplete$mapNeverToMsg, config.ul);
+		return A2(
+			_elm_lang$html$Html_Keyed$ul,
+			customUlAttr,
+			A2(
+				_elm_lang$core$List$map,
+				getKeyedItems,
+				A2(_elm_lang$core$List$take, howManyToShow, data)));
+	});
+var _thebritican$elm_autocomplete$Autocomplete_Autocomplete$view = F4(
+	function (config, howManyToShow, state, data) {
+		return A4(_thebritican$elm_autocomplete$Autocomplete_Autocomplete$viewList, config, howManyToShow, state, data);
+	});
+var _thebritican$elm_autocomplete$Autocomplete_Autocomplete$WentTooHigh = {ctor: 'WentTooHigh'};
+var _thebritican$elm_autocomplete$Autocomplete_Autocomplete$WentTooLow = {ctor: 'WentTooLow'};
+var _thebritican$elm_autocomplete$Autocomplete_Autocomplete$update = F5(
+	function (config, msg, howManyToShow, state, data) {
+		update:
+		while (true) {
+			var _p27 = msg;
+			switch (_p27.ctor) {
+				case 'KeyDown':
+					var _p28 = _p27._0;
+					var boundedList = A2(
+						_elm_lang$core$List$take,
+						howManyToShow,
+						A2(_elm_lang$core$List$map, config.toId, data));
+					var newKey = A3(_thebritican$elm_autocomplete$Autocomplete_Autocomplete$navigateWithKey, _p28, boundedList, state.key);
+					if (_elm_lang$core$Native_Utils.eq(newKey, state.key) && _elm_lang$core$Native_Utils.eq(_p28, 38)) {
+						var _v15 = config,
+							_v16 = _thebritican$elm_autocomplete$Autocomplete_Autocomplete$WentTooHigh,
+							_v17 = howManyToShow,
+							_v18 = state,
+							_v19 = data;
+						config = _v15;
+						msg = _v16;
+						howManyToShow = _v17;
+						state = _v18;
+						data = _v19;
+						continue update;
+					} else {
+						if (_elm_lang$core$Native_Utils.eq(newKey, state.key) && _elm_lang$core$Native_Utils.eq(_p28, 40)) {
+							var _v20 = config,
+								_v21 = _thebritican$elm_autocomplete$Autocomplete_Autocomplete$WentTooLow,
+								_v22 = howManyToShow,
+								_v23 = state,
+								_v24 = data;
+							config = _v20;
+							msg = _v21;
+							howManyToShow = _v22;
+							state = _v23;
+							data = _v24;
+							continue update;
+						} else {
+							if (config.separateSelections) {
+								return {
+									ctor: '_Tuple2',
+									_0: _elm_lang$core$Native_Utils.update(
+										state,
+										{key: newKey}),
+									_1: A2(config.onKeyDown, _p28, newKey)
+								};
+							} else {
+								return {
+									ctor: '_Tuple2',
+									_0: {key: newKey, mouse: newKey},
+									_1: A2(config.onKeyDown, _p28, newKey)
+								};
+							}
+						}
+					}
+				case 'WentTooLow':
+					return {ctor: '_Tuple2', _0: state, _1: config.onTooLow};
+				case 'WentTooHigh':
+					return {ctor: '_Tuple2', _0: state, _1: config.onTooHigh};
+				case 'MouseEnter':
+					var _p29 = _p27._0;
+					return {
+						ctor: '_Tuple2',
+						_0: A3(_thebritican$elm_autocomplete$Autocomplete_Autocomplete$resetMouseStateWithId, config.separateSelections, _p29, state),
+						_1: config.onMouseEnter(_p29)
+					};
+				case 'MouseLeave':
+					var _p30 = _p27._0;
+					return {
+						ctor: '_Tuple2',
+						_0: A3(_thebritican$elm_autocomplete$Autocomplete_Autocomplete$resetMouseStateWithId, config.separateSelections, _p30, state),
+						_1: config.onMouseLeave(_p30)
+					};
+				case 'MouseClick':
+					var _p31 = _p27._0;
+					return {
+						ctor: '_Tuple2',
+						_0: A3(_thebritican$elm_autocomplete$Autocomplete_Autocomplete$resetMouseStateWithId, config.separateSelections, _p31, state),
+						_1: config.onMouseClick(_p31)
+					};
+				default:
+					return {ctor: '_Tuple2', _0: state, _1: _elm_lang$core$Maybe$Nothing};
+			}
+		}
+	});
+var _thebritican$elm_autocomplete$Autocomplete_Autocomplete$KeyDown = function (a) {
+	return {ctor: 'KeyDown', _0: a};
+};
+var _thebritican$elm_autocomplete$Autocomplete_Autocomplete$subscription = _elm_lang$keyboard$Keyboard$downs(_thebritican$elm_autocomplete$Autocomplete_Autocomplete$KeyDown);
+
+var _thebritican$elm_autocomplete$Autocomplete$HtmlDetails = F2(
+	function (a, b) {
+		return {attributes: a, children: b};
+	});
+var _thebritican$elm_autocomplete$Autocomplete$SectionNode = F3(
+	function (a, b, c) {
+		return {nodeType: a, attributes: b, children: c};
+	});
+var _thebritican$elm_autocomplete$Autocomplete$State = function (a) {
+	return {ctor: 'State', _0: a};
+};
+var _thebritican$elm_autocomplete$Autocomplete$empty = _thebritican$elm_autocomplete$Autocomplete$State(_thebritican$elm_autocomplete$Autocomplete_Autocomplete$empty);
+var _thebritican$elm_autocomplete$Autocomplete$reset = F2(
+	function (_p1, _p0) {
+		var _p2 = _p1;
+		var _p3 = _p0;
+		return _thebritican$elm_autocomplete$Autocomplete$State(
+			A2(_thebritican$elm_autocomplete$Autocomplete_Autocomplete$reset, _p2._0, _p3._0));
+	});
+var _thebritican$elm_autocomplete$Autocomplete$resetToFirstItem = F4(
+	function (_p5, data, howManyToShow, _p4) {
+		var _p6 = _p5;
+		var _p7 = _p4;
+		return _thebritican$elm_autocomplete$Autocomplete$State(
+			A4(_thebritican$elm_autocomplete$Autocomplete_Autocomplete$resetToFirstItem, _p6._0, data, howManyToShow, _p7._0));
+	});
+var _thebritican$elm_autocomplete$Autocomplete$resetToLastItem = F4(
+	function (_p9, data, howManyToShow, _p8) {
+		var _p10 = _p9;
+		var _p11 = _p8;
+		return _thebritican$elm_autocomplete$Autocomplete$State(
+			A4(_thebritican$elm_autocomplete$Autocomplete_Autocomplete$resetToLastItem, _p10._0, data, howManyToShow, _p11._0));
+	});
+var _thebritican$elm_autocomplete$Autocomplete$update = F5(
+	function (_p14, _p13, howManyToShow, _p12, data) {
+		var _p15 = _p14;
+		var _p16 = _p13;
+		var _p17 = _p12;
+		var _p18 = A5(_thebritican$elm_autocomplete$Autocomplete_Autocomplete$update, _p15._0, _p16._0, howManyToShow, _p17._0, data);
+		var newState = _p18._0;
+		var maybeMsg = _p18._1;
+		return {
+			ctor: '_Tuple2',
+			_0: _thebritican$elm_autocomplete$Autocomplete$State(newState),
+			_1: maybeMsg
+		};
+	});
+var _thebritican$elm_autocomplete$Autocomplete$Msg = function (a) {
+	return {ctor: 'Msg', _0: a};
+};
+var _thebritican$elm_autocomplete$Autocomplete$subscription = A2(_elm_lang$core$Platform_Sub$map, _thebritican$elm_autocomplete$Autocomplete$Msg, _thebritican$elm_autocomplete$Autocomplete_Autocomplete$subscription);
+var _thebritican$elm_autocomplete$Autocomplete$view = F4(
+	function (_p20, howManyToShow, _p19, data) {
+		var _p21 = _p20;
+		var _p22 = _p19;
+		return A2(
+			_elm_lang$html$Html$map,
+			_thebritican$elm_autocomplete$Autocomplete$Msg,
+			A4(_thebritican$elm_autocomplete$Autocomplete_Autocomplete$view, _p21._0, howManyToShow, _p22._0, data));
+	});
+var _thebritican$elm_autocomplete$Autocomplete$viewWithSections = F4(
+	function (_p24, howManyToShow, _p23, sections) {
+		var _p25 = _p24;
+		var _p26 = _p23;
+		return A2(
+			_elm_lang$html$Html$map,
+			_thebritican$elm_autocomplete$Autocomplete$Msg,
+			A4(_thebritican$elm_autocomplete$Autocomplete_Autocomplete$viewWithSections, _p25._0, howManyToShow, _p26._0, sections));
+	});
+var _thebritican$elm_autocomplete$Autocomplete$UpdateConfig = function (a) {
+	return {ctor: 'UpdateConfig', _0: a};
+};
+var _thebritican$elm_autocomplete$Autocomplete$updateConfig = function (config) {
+	return _thebritican$elm_autocomplete$Autocomplete$UpdateConfig(
+		_thebritican$elm_autocomplete$Autocomplete_Autocomplete$updateConfig(config));
+};
+var _thebritican$elm_autocomplete$Autocomplete$ViewConfig = function (a) {
+	return {ctor: 'ViewConfig', _0: a};
+};
+var _thebritican$elm_autocomplete$Autocomplete$viewConfig = function (config) {
+	return _thebritican$elm_autocomplete$Autocomplete$ViewConfig(
+		_thebritican$elm_autocomplete$Autocomplete_Autocomplete$viewConfig(config));
+};
+var _thebritican$elm_autocomplete$Autocomplete$ViewWithSectionsConfig = function (a) {
+	return {ctor: 'ViewWithSectionsConfig', _0: a};
+};
+var _thebritican$elm_autocomplete$Autocomplete$viewWithSectionsConfig = function (config) {
+	return _thebritican$elm_autocomplete$Autocomplete$ViewWithSectionsConfig(
+		function () {
+			var _p27 = config.section;
+			return _thebritican$elm_autocomplete$Autocomplete_Autocomplete$viewWithSectionsConfig(
+				_elm_lang$core$Native_Utils.update(
+					config,
+					{section: _p27._0}));
+		}());
+};
+var _thebritican$elm_autocomplete$Autocomplete$SectionConfig = function (a) {
+	return {ctor: 'SectionConfig', _0: a};
+};
+var _thebritican$elm_autocomplete$Autocomplete$sectionConfig = function (section) {
+	return _thebritican$elm_autocomplete$Autocomplete$SectionConfig(
+		_thebritican$elm_autocomplete$Autocomplete_Autocomplete$sectionConfig(section));
+};
+
+var _user$project$AccessibleExample$viewConfig = function () {
+	var customizedLi = F3(
+		function (keySelected, mouseSelected, person) {
+			return {
+				attributes: {
+					ctor: '::',
+					_0: _elm_lang$html$Html_Attributes$classList(
+						{
+							ctor: '::',
+							_0: {ctor: '_Tuple2', _0: 'autocomplete-item', _1: true},
+							_1: {
+								ctor: '::',
+								_0: {ctor: '_Tuple2', _0: 'key-selected', _1: keySelected || mouseSelected},
+								_1: {ctor: '[]'}
+							}
+						}),
+					_1: {
+						ctor: '::',
+						_0: _elm_lang$html$Html_Attributes$id(person.name),
+						_1: {ctor: '[]'}
+					}
+				},
+				children: {
+					ctor: '::',
+					_0: _elm_lang$html$Html$text(person.name),
+					_1: {ctor: '[]'}
+				}
+			};
+		});
+	return _thebritican$elm_autocomplete$Autocomplete$viewConfig(
+		{
+			toId: function (_) {
+				return _.name;
+			},
+			ul: {
+				ctor: '::',
+				_0: _elm_lang$html$Html_Attributes$class('autocomplete-list'),
+				_1: {ctor: '[]'}
+			},
+			li: customizedLi
+		});
+}();
+var _user$project$AccessibleExample$acceptablePeople = F2(
+	function (query, people) {
+		var lowerQuery = _elm_lang$core$String$toLower(query);
+		return A2(
+			_elm_lang$core$List$filter,
+			function (_p0) {
+				return A2(
+					_elm_lang$core$String$contains,
+					lowerQuery,
+					_elm_lang$core$String$toLower(
+						function (_) {
+							return _.name;
+						}(_p0)));
+			},
+			people);
+	});
+var _user$project$AccessibleExample$resetMenu = function (model) {
+	return _elm_lang$core$Native_Utils.update(
+		model,
+		{autoState: _thebritican$elm_autocomplete$Autocomplete$empty, showMenu: false});
+};
+var _user$project$AccessibleExample$removeSelection = function (model) {
+	return _elm_lang$core$Native_Utils.update(
+		model,
+		{selectedPerson: _elm_lang$core$Maybe$Nothing});
+};
+var _user$project$AccessibleExample$resetInput = function (model) {
+	return _user$project$AccessibleExample$resetMenu(
+		_user$project$AccessibleExample$removeSelection(
+			_elm_lang$core$Native_Utils.update(
+				model,
+				{query: ''})));
+};
+var _user$project$AccessibleExample$Model = F6(
+	function (a, b, c, d, e, f) {
+		return {people: a, autoState: b, howManyToShow: c, query: d, selectedPerson: e, showMenu: f};
+	});
+var _user$project$AccessibleExample$Person = F4(
+	function (a, b, c, d) {
+		return {name: a, year: b, city: c, state: d};
+	});
+var _user$project$AccessibleExample$getPersonAtId = F2(
+	function (people, id) {
+		return A2(
+			_elm_lang$core$Maybe$withDefault,
+			A4(_user$project$AccessibleExample$Person, '', 0, '', ''),
+			_elm_lang$core$List$head(
+				A2(
+					_elm_lang$core$List$filter,
+					function (person) {
+						return _elm_lang$core$Native_Utils.eq(person.name, id);
+					},
+					people)));
+	});
+var _user$project$AccessibleExample$setQuery = F2(
+	function (model, id) {
+		return _elm_lang$core$Native_Utils.update(
+			model,
+			{
+				query: function (_) {
+					return _.name;
+				}(
+					A2(_user$project$AccessibleExample$getPersonAtId, model.people, id)),
+				selectedPerson: _elm_lang$core$Maybe$Just(
+					A2(_user$project$AccessibleExample$getPersonAtId, model.people, id))
+			});
+	});
+var _user$project$AccessibleExample$presidents = {
+	ctor: '::',
+	_0: A4(_user$project$AccessibleExample$Person, 'George Washington', 1732, 'Westmoreland County', 'Virginia'),
+	_1: {
+		ctor: '::',
+		_0: A4(_user$project$AccessibleExample$Person, 'John Adams', 1735, 'Braintree', 'Massachusetts'),
+		_1: {
+			ctor: '::',
+			_0: A4(_user$project$AccessibleExample$Person, 'Thomas Jefferson', 1743, 'Shadwell', 'Virginia'),
+			_1: {
+				ctor: '::',
+				_0: A4(_user$project$AccessibleExample$Person, 'James Madison', 1751, 'Port Conway', 'Virginia'),
+				_1: {
+					ctor: '::',
+					_0: A4(_user$project$AccessibleExample$Person, 'James Monroe', 1758, 'Monroe Hall', 'Virginia'),
+					_1: {
+						ctor: '::',
+						_0: A4(_user$project$AccessibleExample$Person, 'Andrew Jackson', 1767, 'Waxhaws Region', 'South/North Carolina'),
+						_1: {
+							ctor: '::',
+							_0: A4(_user$project$AccessibleExample$Person, 'John Quincy Adams', 1767, 'Braintree', 'Massachusetts'),
+							_1: {
+								ctor: '::',
+								_0: A4(_user$project$AccessibleExample$Person, 'William Henry Harrison', 1773, 'Charles City County', 'Virginia'),
+								_1: {
+									ctor: '::',
+									_0: A4(_user$project$AccessibleExample$Person, 'Martin Van Buren', 1782, 'Kinderhook', 'New York'),
+									_1: {
+										ctor: '::',
+										_0: A4(_user$project$AccessibleExample$Person, 'Zachary Taylor', 1784, 'Barboursville', 'Virginia'),
+										_1: {
+											ctor: '::',
+											_0: A4(_user$project$AccessibleExample$Person, 'John Tyler', 1790, 'Charles City County', 'Virginia'),
+											_1: {
+												ctor: '::',
+												_0: A4(_user$project$AccessibleExample$Person, 'James Buchanan', 1791, 'Cove Gap', 'Pennsylvania'),
+												_1: {
+													ctor: '::',
+													_0: A4(_user$project$AccessibleExample$Person, 'James K. Polk', 1795, 'Pineville', 'North Carolina'),
+													_1: {
+														ctor: '::',
+														_0: A4(_user$project$AccessibleExample$Person, 'Millard Fillmore', 1800, 'Summerhill', 'New York'),
+														_1: {
+															ctor: '::',
+															_0: A4(_user$project$AccessibleExample$Person, 'Franklin Pierce', 1804, 'Hillsborough', 'New Hampshire'),
+															_1: {
+																ctor: '::',
+																_0: A4(_user$project$AccessibleExample$Person, 'Andrew Johnson', 1808, 'Raleigh', 'North Carolina'),
+																_1: {
+																	ctor: '::',
+																	_0: A4(_user$project$AccessibleExample$Person, 'Abraham Lincoln', 1809, 'Sinking spring', 'Kentucky'),
+																	_1: {
+																		ctor: '::',
+																		_0: A4(_user$project$AccessibleExample$Person, 'Ulysses S. Grant', 1822, 'Point Pleasant', 'Ohio'),
+																		_1: {
+																			ctor: '::',
+																			_0: A4(_user$project$AccessibleExample$Person, 'Rutherford B. Hayes', 1822, 'Delaware', 'Ohio'),
+																			_1: {
+																				ctor: '::',
+																				_0: A4(_user$project$AccessibleExample$Person, 'Chester A. Arthur', 1829, 'Fairfield', 'Vermont'),
+																				_1: {
+																					ctor: '::',
+																					_0: A4(_user$project$AccessibleExample$Person, 'James A. Garfield', 1831, 'Moreland Hills', 'Ohio'),
+																					_1: {
+																						ctor: '::',
+																						_0: A4(_user$project$AccessibleExample$Person, 'Benjamin Harrison', 1833, 'North Bend', 'Ohio'),
+																						_1: {
+																							ctor: '::',
+																							_0: A4(_user$project$AccessibleExample$Person, 'Grover Cleveland', 1837, 'Caldwell', 'New Jersey'),
+																							_1: {
+																								ctor: '::',
+																								_0: A4(_user$project$AccessibleExample$Person, 'William McKinley', 1843, 'Niles', 'Ohio'),
+																								_1: {
+																									ctor: '::',
+																									_0: A4(_user$project$AccessibleExample$Person, 'Woodrow Wilson', 1856, 'Staunton', 'Virginia'),
+																									_1: {
+																										ctor: '::',
+																										_0: A4(_user$project$AccessibleExample$Person, 'William Howard Taft', 1857, 'Cincinnati', 'Ohio'),
+																										_1: {
+																											ctor: '::',
+																											_0: A4(_user$project$AccessibleExample$Person, 'Theodore Roosevelt', 1858, 'New York City', 'New York'),
+																											_1: {
+																												ctor: '::',
+																												_0: A4(_user$project$AccessibleExample$Person, 'Warren G. Harding', 1865, 'Blooming Grove', 'Ohio'),
+																												_1: {
+																													ctor: '::',
+																													_0: A4(_user$project$AccessibleExample$Person, 'Calvin Coolidge', 1872, 'Plymouth', 'Vermont'),
+																													_1: {
+																														ctor: '::',
+																														_0: A4(_user$project$AccessibleExample$Person, 'Herbert Hoover', 1874, 'West Branch', 'Iowa'),
+																														_1: {
+																															ctor: '::',
+																															_0: A4(_user$project$AccessibleExample$Person, 'Franklin D. Roosevelt', 1882, 'Hyde Park', 'New York'),
+																															_1: {
+																																ctor: '::',
+																																_0: A4(_user$project$AccessibleExample$Person, 'Harry S. Truman', 1884, 'Lamar', 'Missouri'),
+																																_1: {
+																																	ctor: '::',
+																																	_0: A4(_user$project$AccessibleExample$Person, 'Dwight D. Eisenhower', 1890, 'Denison', 'Texas'),
+																																	_1: {
+																																		ctor: '::',
+																																		_0: A4(_user$project$AccessibleExample$Person, 'Lyndon B. Johnson', 1908, 'Stonewall', 'Texas'),
+																																		_1: {
+																																			ctor: '::',
+																																			_0: A4(_user$project$AccessibleExample$Person, 'Ronald Reagan', 1911, 'Tampico', 'Illinois'),
+																																			_1: {
+																																				ctor: '::',
+																																				_0: A4(_user$project$AccessibleExample$Person, 'Richard M. Nixon', 1913, 'Yorba Linda', 'California'),
+																																				_1: {
+																																					ctor: '::',
+																																					_0: A4(_user$project$AccessibleExample$Person, 'Gerald R. Ford', 1913, 'Omaha', 'Nebraska'),
+																																					_1: {
+																																						ctor: '::',
+																																						_0: A4(_user$project$AccessibleExample$Person, 'John F. Kennedy', 1917, 'Brookline', 'Massachusetts'),
+																																						_1: {
+																																							ctor: '::',
+																																							_0: A4(_user$project$AccessibleExample$Person, 'George H. W. Bush', 1924, 'Milton', 'Massachusetts'),
+																																							_1: {
+																																								ctor: '::',
+																																								_0: A4(_user$project$AccessibleExample$Person, 'Jimmy Carter', 1924, 'Plains', 'Georgia'),
+																																								_1: {
+																																									ctor: '::',
+																																									_0: A4(_user$project$AccessibleExample$Person, 'George W. Bush', 1946, 'New Haven', 'Connecticut'),
+																																									_1: {
+																																										ctor: '::',
+																																										_0: A4(_user$project$AccessibleExample$Person, 'Bill Clinton', 1946, 'Hope', 'Arkansas'),
+																																										_1: {
+																																											ctor: '::',
+																																											_0: A4(_user$project$AccessibleExample$Person, 'Barack Obama', 1961, 'Honolulu', 'Hawaii'),
+																																											_1: {ctor: '[]'}
+																																										}
+																																									}
+																																								}
+																																							}
+																																						}
+																																					}
+																																				}
+																																			}
+																																		}
+																																	}
+																																}
+																															}
+																														}
+																													}
+																												}
+																											}
+																										}
+																									}
+																								}
+																							}
+																						}
+																					}
+																				}
+																			}
+																		}
+																	}
+																}
+															}
+														}
+													}
+												}
+											}
+										}
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+};
+var _user$project$AccessibleExample$init = {people: _user$project$AccessibleExample$presidents, autoState: _thebritican$elm_autocomplete$Autocomplete$empty, howManyToShow: 5, query: '', selectedPerson: _elm_lang$core$Maybe$Nothing, showMenu: false};
+var _user$project$AccessibleExample$NoOp = {ctor: 'NoOp'};
+var _user$project$AccessibleExample$OnFocus = {ctor: 'OnFocus'};
+var _user$project$AccessibleExample$PreviewPerson = function (a) {
+	return {ctor: 'PreviewPerson', _0: a};
+};
+var _user$project$AccessibleExample$SelectPersonMouse = function (a) {
+	return {ctor: 'SelectPersonMouse', _0: a};
+};
+var _user$project$AccessibleExample$SelectPersonKeyboard = function (a) {
+	return {ctor: 'SelectPersonKeyboard', _0: a};
+};
+var _user$project$AccessibleExample$HandleEscape = {ctor: 'HandleEscape'};
+var _user$project$AccessibleExample$Reset = {ctor: 'Reset'};
+var _user$project$AccessibleExample$Wrap = function (a) {
+	return {ctor: 'Wrap', _0: a};
+};
+var _user$project$AccessibleExample$updateConfig = _thebritican$elm_autocomplete$Autocomplete$updateConfig(
+	{
+		toId: function (_) {
+			return _.name;
+		},
+		onKeyDown: F2(
+			function (code, maybeId) {
+				return (_elm_lang$core$Native_Utils.eq(code, 38) || _elm_lang$core$Native_Utils.eq(code, 40)) ? A2(_elm_lang$core$Maybe$map, _user$project$AccessibleExample$PreviewPerson, maybeId) : (_elm_lang$core$Native_Utils.eq(code, 13) ? A2(_elm_lang$core$Maybe$map, _user$project$AccessibleExample$SelectPersonKeyboard, maybeId) : _elm_lang$core$Maybe$Just(_user$project$AccessibleExample$Reset));
+			}),
+		onTooLow: _elm_lang$core$Maybe$Just(
+			_user$project$AccessibleExample$Wrap(false)),
+		onTooHigh: _elm_lang$core$Maybe$Just(
+			_user$project$AccessibleExample$Wrap(true)),
+		onMouseEnter: function (id) {
+			return _elm_lang$core$Maybe$Just(
+				_user$project$AccessibleExample$PreviewPerson(id));
+		},
+		onMouseLeave: function (_p1) {
+			return _elm_lang$core$Maybe$Nothing;
+		},
+		onMouseClick: function (id) {
+			return _elm_lang$core$Maybe$Just(
+				_user$project$AccessibleExample$SelectPersonMouse(id));
+		},
+		separateSelections: false
+	});
+var _user$project$AccessibleExample$update = F2(
+	function (msg, model) {
+		update:
+		while (true) {
+			var _p2 = msg;
+			switch (_p2.ctor) {
+				case 'SetQuery':
+					var _p4 = _p2._0;
+					var showMenu = function (_p3) {
+						return !_elm_lang$core$List$isEmpty(_p3);
+					}(
+						A2(_user$project$AccessibleExample$acceptablePeople, _p4, model.people));
+					return A2(
+						_elm_lang$core$Platform_Cmd_ops['!'],
+						_elm_lang$core$Native_Utils.update(
+							model,
+							{query: _p4, showMenu: showMenu, selectedPerson: _elm_lang$core$Maybe$Nothing}),
+						{ctor: '[]'});
+				case 'SetAutoState':
+					var _p5 = A5(
+						_thebritican$elm_autocomplete$Autocomplete$update,
+						_user$project$AccessibleExample$updateConfig,
+						_p2._0,
+						model.howManyToShow,
+						model.autoState,
+						A2(_user$project$AccessibleExample$acceptablePeople, model.query, model.people));
+					var newState = _p5._0;
+					var maybeMsg = _p5._1;
+					var newModel = _elm_lang$core$Native_Utils.update(
+						model,
+						{autoState: newState});
+					var _p6 = maybeMsg;
+					if (_p6.ctor === 'Nothing') {
+						return A2(
+							_elm_lang$core$Platform_Cmd_ops['!'],
+							newModel,
+							{ctor: '[]'});
+					} else {
+						var _v2 = _p6._0,
+							_v3 = newModel;
+						msg = _v2;
+						model = _v3;
+						continue update;
+					}
+				case 'HandleEscape':
+					var validOptions = !_elm_lang$core$List$isEmpty(
+						A2(_user$project$AccessibleExample$acceptablePeople, model.query, model.people));
+					var handleEscape = validOptions ? _user$project$AccessibleExample$resetMenu(
+						_user$project$AccessibleExample$removeSelection(model)) : _user$project$AccessibleExample$resetInput(model);
+					var escapedModel = function () {
+						var _p7 = model.selectedPerson;
+						if (_p7.ctor === 'Just') {
+							return _elm_lang$core$Native_Utils.eq(model.query, _p7._0.name) ? _user$project$AccessibleExample$resetInput(model) : handleEscape;
+						} else {
+							return handleEscape;
+						}
+					}();
+					return A2(
+						_elm_lang$core$Platform_Cmd_ops['!'],
+						escapedModel,
+						{ctor: '[]'});
+				case 'Wrap':
+					var _p8 = model.selectedPerson;
+					if (_p8.ctor === 'Just') {
+						var _v6 = _user$project$AccessibleExample$Reset,
+							_v7 = model;
+						msg = _v6;
+						model = _v7;
+						continue update;
+					} else {
+						return _p2._0 ? A2(
+							_elm_lang$core$Platform_Cmd_ops['!'],
+							_elm_lang$core$Native_Utils.update(
+								model,
+								{
+									autoState: A4(
+										_thebritican$elm_autocomplete$Autocomplete$resetToLastItem,
+										_user$project$AccessibleExample$updateConfig,
+										A2(_user$project$AccessibleExample$acceptablePeople, model.query, model.people),
+										model.howManyToShow,
+										model.autoState),
+									selectedPerson: _elm_lang$core$List$head(
+										_elm_lang$core$List$reverse(
+											A2(
+												_elm_lang$core$List$take,
+												model.howManyToShow,
+												A2(_user$project$AccessibleExample$acceptablePeople, model.query, model.people))))
+								}),
+							{ctor: '[]'}) : A2(
+							_elm_lang$core$Platform_Cmd_ops['!'],
+							_elm_lang$core$Native_Utils.update(
+								model,
+								{
+									autoState: A4(
+										_thebritican$elm_autocomplete$Autocomplete$resetToFirstItem,
+										_user$project$AccessibleExample$updateConfig,
+										A2(_user$project$AccessibleExample$acceptablePeople, model.query, model.people),
+										model.howManyToShow,
+										model.autoState),
+									selectedPerson: _elm_lang$core$List$head(
+										A2(
+											_elm_lang$core$List$take,
+											model.howManyToShow,
+											A2(_user$project$AccessibleExample$acceptablePeople, model.query, model.people)))
+								}),
+							{ctor: '[]'});
+					}
+				case 'Reset':
+					return A2(
+						_elm_lang$core$Platform_Cmd_ops['!'],
+						_elm_lang$core$Native_Utils.update(
+							model,
+							{
+								autoState: A2(_thebritican$elm_autocomplete$Autocomplete$reset, _user$project$AccessibleExample$updateConfig, model.autoState),
+								selectedPerson: _elm_lang$core$Maybe$Nothing
+							}),
+						{ctor: '[]'});
+				case 'SelectPersonKeyboard':
+					var newModel = _user$project$AccessibleExample$resetMenu(
+						A2(_user$project$AccessibleExample$setQuery, model, _p2._0));
+					return A2(
+						_elm_lang$core$Platform_Cmd_ops['!'],
+						newModel,
+						{ctor: '[]'});
+				case 'SelectPersonMouse':
+					var newModel = _user$project$AccessibleExample$resetMenu(
+						A2(_user$project$AccessibleExample$setQuery, model, _p2._0));
+					return {
+						ctor: '_Tuple2',
+						_0: newModel,
+						_1: A2(
+							_elm_lang$core$Task$attempt,
+							function (_p9) {
+								return _user$project$AccessibleExample$NoOp;
+							},
+							_elm_lang$dom$Dom$focus('president-input'))
+					};
+				case 'PreviewPerson':
+					return A2(
+						_elm_lang$core$Platform_Cmd_ops['!'],
+						_elm_lang$core$Native_Utils.update(
+							model,
+							{
+								selectedPerson: _elm_lang$core$Maybe$Just(
+									A2(_user$project$AccessibleExample$getPersonAtId, model.people, _p2._0))
+							}),
+						{ctor: '[]'});
+				case 'OnFocus':
+					return A2(
+						_elm_lang$core$Platform_Cmd_ops['!'],
+						model,
+						{ctor: '[]'});
+				default:
+					return A2(
+						_elm_lang$core$Platform_Cmd_ops['!'],
+						model,
+						{ctor: '[]'});
+			}
+		}
+	});
+var _user$project$AccessibleExample$SetAutoState = function (a) {
+	return {ctor: 'SetAutoState', _0: a};
+};
+var _user$project$AccessibleExample$subscriptions = function (model) {
+	return A2(_elm_lang$core$Platform_Sub$map, _user$project$AccessibleExample$SetAutoState, _thebritican$elm_autocomplete$Autocomplete$subscription);
+};
+var _user$project$AccessibleExample$viewMenu = function (model) {
+	return A2(
+		_elm_lang$html$Html$div,
+		{
+			ctor: '::',
+			_0: _elm_lang$html$Html_Attributes$class('autocomplete-menu'),
+			_1: {ctor: '[]'}
+		},
+		{
+			ctor: '::',
+			_0: A2(
+				_elm_lang$html$Html$map,
+				_user$project$AccessibleExample$SetAutoState,
+				A4(
+					_thebritican$elm_autocomplete$Autocomplete$view,
+					_user$project$AccessibleExample$viewConfig,
+					model.howManyToShow,
+					model.autoState,
+					A2(_user$project$AccessibleExample$acceptablePeople, model.query, model.people))),
+			_1: {ctor: '[]'}
+		});
+};
+var _user$project$AccessibleExample$SetQuery = function (a) {
+	return {ctor: 'SetQuery', _0: a};
+};
+var _user$project$AccessibleExample$view = function (model) {
+	var activeDescendant = function (attributes) {
+		var _p10 = model.selectedPerson;
+		if (_p10.ctor === 'Just') {
+			return {
+				ctor: '::',
+				_0: A2(_elm_lang$html$Html_Attributes$attribute, 'aria-activedescendant', _p10._0.name),
+				_1: attributes
+			};
+		} else {
+			return attributes;
+		}
+	};
+	var query = function () {
+		var _p11 = model.selectedPerson;
+		if (_p11.ctor === 'Just') {
+			return _p11._0.name;
+		} else {
+			return model.query;
+		}
+	}();
+	var menu = model.showMenu ? {
+		ctor: '::',
+		_0: _user$project$AccessibleExample$viewMenu(model),
+		_1: {ctor: '[]'}
+	} : {ctor: '[]'};
+	var fromResult = function (result) {
+		var _p12 = result;
+		if (_p12.ctor === 'Ok') {
+			return _elm_lang$core$Json_Decode$succeed(_p12._0);
+		} else {
+			return _elm_lang$core$Json_Decode$fail(_p12._0);
+		}
+	};
+	var dec = A2(
+		_elm_lang$core$Json_Decode$andThen,
+		fromResult,
+		A2(
+			_elm_lang$core$Json_Decode$map,
+			function (code) {
+				return (_elm_lang$core$Native_Utils.eq(code, 38) || _elm_lang$core$Native_Utils.eq(code, 40)) ? _elm_lang$core$Result$Ok(_user$project$AccessibleExample$NoOp) : (_elm_lang$core$Native_Utils.eq(code, 27) ? _elm_lang$core$Result$Ok(_user$project$AccessibleExample$HandleEscape) : _elm_lang$core$Result$Err('not handling that key'));
+			},
+			_elm_lang$html$Html_Events$keyCode));
+	var options = {preventDefault: true, stopPropagation: false};
+	return A2(
+		_elm_lang$html$Html$div,
+		{ctor: '[]'},
+		A2(
+			_elm_lang$core$List$append,
+			{
+				ctor: '::',
+				_0: A2(
+					_elm_lang$html$Html$input,
+					activeDescendant(
+						{
+							ctor: '::',
+							_0: _elm_lang$html$Html_Events$onInput(_user$project$AccessibleExample$SetQuery),
+							_1: {
+								ctor: '::',
+								_0: _elm_lang$html$Html_Events$onFocus(_user$project$AccessibleExample$OnFocus),
+								_1: {
+									ctor: '::',
+									_0: A3(_elm_lang$html$Html_Events$onWithOptions, 'keydown', options, dec),
+									_1: {
+										ctor: '::',
+										_0: _elm_lang$html$Html_Attributes$value(query),
+										_1: {
+											ctor: '::',
+											_0: _elm_lang$html$Html_Attributes$id('president-input'),
+											_1: {
+												ctor: '::',
+												_0: _elm_lang$html$Html_Attributes$class('autocomplete-input'),
+												_1: {
+													ctor: '::',
+													_0: _elm_lang$html$Html_Attributes$autocomplete(false),
+													_1: {
+														ctor: '::',
+														_0: A2(_elm_lang$html$Html_Attributes$attribute, 'aria-owns', 'list-of-presidents'),
+														_1: {
+															ctor: '::',
+															_0: A2(
+																_elm_lang$html$Html_Attributes$attribute,
+																'aria-expanded',
+																_elm_lang$core$String$toLower(
+																	_elm_lang$core$Basics$toString(model.showMenu))),
+															_1: {
+																ctor: '::',
+																_0: A2(
+																	_elm_lang$html$Html_Attributes$attribute,
+																	'aria-haspopup',
+																	_elm_lang$core$String$toLower(
+																		_elm_lang$core$Basics$toString(model.showMenu))),
+																_1: {
+																	ctor: '::',
+																	_0: A2(_elm_lang$html$Html_Attributes$attribute, 'role', 'combobox'),
+																	_1: {
+																		ctor: '::',
+																		_0: A2(_elm_lang$html$Html_Attributes$attribute, 'aria-autocomplete', 'list'),
+																		_1: {ctor: '[]'}
+																	}
+																}
+															}
+														}
+													}
+												}
+											}
+										}
+									}
+								}
+							}
+						}),
+					{ctor: '[]'}),
+				_1: {ctor: '[]'}
+			},
+			menu));
+};
+var _user$project$AccessibleExample$main = _elm_lang$html$Html$program(
+	{
+		init: A2(
+			_elm_lang$core$Platform_Cmd_ops['!'],
+			_user$project$AccessibleExample$init,
+			{ctor: '[]'}),
+		update: _user$project$AccessibleExample$update,
+		view: _user$project$AccessibleExample$view,
+		subscriptions: _user$project$AccessibleExample$subscriptions
+	})();
+
 var _user$project$Layout$TextSearch = {ctor: 'TextSearch'};
 var _user$project$Layout$MainContent = {ctor: 'MainContent'};
 var _user$project$Layout$SearchForm = {ctor: 'SearchForm'};
@@ -27039,23 +28394,29 @@ var _user$project$Layout$stylesheet = _mdgriffith$style_elements$Style$styleShee
 		}
 	});
 
-var _user$project$Main$subscriptions = function (_p0) {
-	return _elm_lang$core$Platform_Sub$none;
-};
-var _user$project$Main$update = F2(
-	function (msg, model) {
-		var _p1 = msg;
-		return A2(
-			_elm_lang$core$Platform_Cmd_ops['!'],
-			model,
-			{ctor: '[]'});
+var _user$project$Main$Model = F3(
+	function (a, b, c) {
+		return {accessibleAutocomplete: a, status: b, currentFocus: c};
 	});
-var _user$project$Main$init = A2(
-	_elm_lang$core$Platform_Cmd_ops['!'],
-	{status: 'Hello world'},
-	{ctor: '[]'});
-var _user$project$Main$Model = function (a) {
-	return {status: a};
+var _user$project$Main$AccessibleExample = function (a) {
+	return {ctor: 'AccessibleExample', _0: a};
+};
+var _user$project$Main$viewSimpleExample = function (autocomplete) {
+	return A2(
+		_elm_lang$html$Html$map,
+		_user$project$Main$AccessibleExample,
+		_user$project$AccessibleExample$view(autocomplete));
+};
+var _user$project$Main$subscriptions = function (model) {
+	var _p0 = model.currentFocus;
+	if (_p0.ctor === 'Simple') {
+		return A2(
+			_elm_lang$core$Platform_Sub$map,
+			_user$project$Main$AccessibleExample,
+			_user$project$AccessibleExample$subscriptions(model.accessibleAutocomplete));
+	} else {
+		return _elm_lang$core$Platform_Sub$none;
+	}
 };
 var _user$project$Main$NoOp = {ctor: 'NoOp'};
 var _user$project$Main$searchFormView = A3(
@@ -27089,7 +28450,7 @@ var _user$project$Main$searchFormView = A3(
 				_1: {ctor: '[]'}
 			},
 			{
-				onChange: function (_p2) {
+				onChange: function (_p1) {
 					return _user$project$Main$NoOp;
 				},
 				value: 'test',
@@ -27107,7 +28468,7 @@ var _user$project$Main$searchFormView = A3(
 					_1: {ctor: '[]'}
 				},
 				{
-					onChange: function (_p3) {
+					onChange: function (_p2) {
 						return _user$project$Main$NoOp;
 					},
 					value: 'test',
@@ -27186,20 +28547,63 @@ var _user$project$Main$view = function (model) {
 								_1: {
 									ctor: '::',
 									_0: _user$project$Main$searchFormView,
-									_1: {ctor: '[]'}
+									_1: {
+										ctor: '::',
+										_0: _mdgriffith$style_elements$Element$html(
+											_user$project$Main$viewSimpleExample(model.accessibleAutocomplete)),
+										_1: {ctor: '[]'}
+									}
 								}
 							}
 						})),
 				_1: {ctor: '[]'}
 			}));
 };
+var _user$project$Main$None = {ctor: 'None'};
+var _user$project$Main$Simple = {ctor: 'Simple'};
+var _user$project$Main$init = A2(
+	_elm_lang$core$Platform_Cmd_ops['!'],
+	{accessibleAutocomplete: _user$project$AccessibleExample$init, status: 'Hello world', currentFocus: _user$project$Main$Simple},
+	{ctor: '[]'});
+var _user$project$Main$update = F2(
+	function (msg, model) {
+		var newModel = function () {
+			var _p3 = msg;
+			if (_p3.ctor === 'AccessibleExample') {
+				var _p5 = _p3._0;
+				var toggleFocus = F2(
+					function (autoMsg, model) {
+						var _p4 = autoMsg;
+						if (_p4.ctor === 'OnFocus') {
+							return _elm_lang$core$Native_Utils.update(
+								model,
+								{currentFocus: _user$project$Main$Simple});
+						} else {
+							return model;
+						}
+					});
+				return A2(
+					toggleFocus,
+					_p5,
+					_elm_lang$core$Native_Utils.update(
+						model,
+						{
+							accessibleAutocomplete: _elm_lang$core$Tuple$first(
+								A2(_user$project$AccessibleExample$update, _p5, model.accessibleAutocomplete))
+						}));
+			} else {
+				return model;
+			}
+		}();
+		return {ctor: '_Tuple2', _0: newModel, _1: _elm_lang$core$Platform_Cmd$none};
+	});
 var _user$project$Main$main = _elm_lang$html$Html$program(
 	{init: _user$project$Main$init, update: _user$project$Main$update, view: _user$project$Main$view, subscriptions: _user$project$Main$subscriptions})();
 
 var Elm = {};
 Elm['Main'] = Elm['Main'] || {};
 if (typeof _user$project$Main$main !== 'undefined') {
-    _user$project$Main$main(Elm['Main'], 'Main', {"types":{"unions":{"Main.Msg":{"args":[],"tags":{"NoOp":[]}}},"aliases":{},"message":"Main.Msg"},"versions":{"elm":"0.18.0"}});
+    _user$project$Main$main(Elm['Main'], 'Main', {"types":{"unions":{"Autocomplete.Msg":{"args":[],"tags":{"Msg":["Autocomplete.Autocomplete.Msg"]}},"Autocomplete.Autocomplete.Msg":{"args":[],"tags":{"MouseLeave":["String"],"WentTooHigh":[],"WentTooLow":[],"MouseClick":["String"],"KeyDown":["Char.KeyCode"],"NoOp":[],"MouseEnter":["String"]}},"Main.Msg":{"args":[],"tags":{"AccessibleExample":["AccessibleExample.Msg"],"NoOp":[]}},"AccessibleExample.Msg":{"args":[],"tags":{"SelectPersonMouse":["String"],"OnFocus":[],"SelectPersonKeyboard":["String"],"HandleEscape":[],"Wrap":["Bool"],"PreviewPerson":["String"],"SetAutoState":["Autocomplete.Msg"],"Reset":[],"SetQuery":["String"],"NoOp":[]}}},"aliases":{"Char.KeyCode":{"args":[],"type":"Int"}},"message":"Main.Msg"},"versions":{"elm":"0.18.0"}});
 }
 
 if (typeof define === "function" && define['amd'])
