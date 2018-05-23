@@ -1,0 +1,8 @@
+flags: {}
+packages:
+- '.'
+extra-deps:
+resolver: lts-9.6
+nix:
+  enable: true
+  packages: [postgresql, zlib]

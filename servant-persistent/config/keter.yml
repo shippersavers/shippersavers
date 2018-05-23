@@ -1,0 +1,5 @@
+exec: ../perservant
+host: coddeys.com
+
+plugins:
+    postgres: true
